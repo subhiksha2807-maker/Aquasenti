@@ -1,9 +1,11 @@
 import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -156,3 +158,18 @@ async def tank_socket(websocket: WebSocket, tank_id: str):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(tank_id, websocket)
+
+
+# In production Docker deployments, FastAPI serves the compiled React app from
+# the same origin. Local Vite development remains unchanged when this directory
+# is absent.
+frontend_dist_value = os.getenv("FRONTEND_DIST")
+if frontend_dist_value:
+    frontend_dist = Path(frontend_dist_value).resolve()
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_frontend(full_path: str):
+        requested = (frontend_dist / full_path).resolve()
+        if requested.is_relative_to(frontend_dist) and requested.is_file():
+            return FileResponse(requested)
+        return FileResponse(frontend_dist / "index.html")

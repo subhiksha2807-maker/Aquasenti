@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aquasenti
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: ESP32_API_KEY
+        generateValue: true
+      - key: ALLOW_DEMO_SIMULATOR
+        value: "false"

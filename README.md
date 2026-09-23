@@ -154,3 +154,23 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/readings -Headers 
 - The prediction model is trained on synthetic data and is for workflow demonstration only.
 - The configurable demo status bands are documented in `maintenance_config.json`.
 - There are no Firebase or Supabase packages, imports, configuration files, or services.
+
+## One-click Render deployment
+
+The repository includes a root `Dockerfile` and `render.yaml`. The production
+container builds React, trains the demonstration model, seeds SQLite, and serves
+the website and API from one HTTPS origin. Local development is unchanged.
+
+1. Open `https://dashboard.render.com/blueprints` and choose **New Blueprint**.
+2. Connect this GitHub repository and select the `main` branch.
+3. Render detects `render.yaml`; review and deploy the `aquasenti` service.
+4. When deployment completes, share the generated `https://...onrender.com` URL.
+
+The free Render filesystem is ephemeral. Simulator or ESP32 readings can be lost
+when the service restarts or redeploys; the seeded demonstration data returns on
+the next deployment. Use a paid persistent disk for durable SQLite storage.
+
+For security, the public deployment disables the browser-based demo ingestion
+endpoint. It can display seeded dashboard data and accept ESP32 readings that
+provide the generated API key. Keep that key in Render's environment settings
+and in the physical ESP32 configuration only—never commit it.

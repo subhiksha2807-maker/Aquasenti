@@ -1,0 +1,10 @@
+{
+  "description": "Demonstration maintenance-prioritization categories; not scientifically validated safety thresholds.",
+  "offline_minutes": 30,
+  "statuses": [
+    { "min_days": 0, "max_days": 2, "label": "Urgent Inspection" },
+    { "min_days": 3, "max_days": 7, "label": "Cleaning Soon" },
+    { "min_days": 8, "max_days": 14, "label": "Monitor Closely" },
+    { "min_days": 15, "max_days": null, "label": "Routine Monitoring" }
+  ]
+}

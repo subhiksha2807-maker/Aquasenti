@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+backend/venv/
+backend/.venv/
+
+# Environment and secrets (keep only sanitized templates)
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Generated local data/model artifacts
+backend/data/*.db
+backend/data/*.db-*
+*.sqlite
+*.sqlite3
+backend/ml/tank_training_data.csv
+backend/ml/tank_cleaning_model.pkl
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

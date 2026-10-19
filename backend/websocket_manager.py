@@ -1,30 +1,34 @@
+"""Tank-scoped WebSocket connection registry."""
+from __future__ import annotations
+
 from collections import defaultdict
+from typing import Any
 
 from fastapi import WebSocket
 
 
-class ConnectionManager:
-    def __init__(self):
-        self.active: dict[str, list[WebSocket]] = defaultdict(list)
+class WebSocketManager:
+    def __init__(self) -> None:
+        self.connections: dict[str, set[WebSocket]] = defaultdict(set)
 
-    async def connect(self, tank_id: str, websocket: WebSocket):
+    async def connect(self, tank_id: str, websocket: WebSocket) -> None:
         await websocket.accept()
-        self.active[tank_id.upper()].append(websocket)
+        self.connections[tank_id].add(websocket)
 
-    def disconnect(self, tank_id: str, websocket: WebSocket):
-        connections = self.active.get(tank_id.upper(), [])
-        if websocket in connections:
-            connections.remove(websocket)
+    def disconnect(self, tank_id: str, websocket: WebSocket) -> None:
+        self.connections[tank_id].discard(websocket)
+        if not self.connections[tank_id]:
+            self.connections.pop(tank_id, None)
 
-    async def broadcast(self, tank_id: str, message: dict):
-        stale = []
-        for connection in self.active.get(tank_id.upper(), []).copy():
+    async def broadcast(self, tank_id: str, message: dict[str, Any]) -> None:
+        stale: list[WebSocket] = []
+        for websocket in tuple(self.connections.get(tank_id, ())):
             try:
-                await connection.send_json(message)
+                await websocket.send_json(message)
             except Exception:
-                stale.append(connection)
-        for connection in stale:
-            self.disconnect(tank_id, connection)
+                stale.append(websocket)
+        for websocket in stale:
+            self.disconnect(tank_id, websocket)
 
 
-manager = ConnectionManager()
+manager = WebSocketManager()

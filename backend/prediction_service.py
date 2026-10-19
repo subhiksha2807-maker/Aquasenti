@@ -1,66 +1,55 @@
+"""Model loading and inference for the AquaSentinel demo model."""
+from __future__ import annotations
+
 import json
-from datetime import date, datetime, timedelta, timezone
+import os
+from datetime import date, timedelta
 from pathlib import Path
 
 import joblib
-import numpy as np
 import pandas as pd
-from sqlalchemy.orm import Session
-
-import crud
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "ml" / "tank_cleaning_model.pkl"
-CONFIG = json.loads((BASE_DIR / "maintenance_config.json").read_text(encoding="utf-8"))
+DEFAULT_MODEL_PATH = BASE_DIR / "ml" / "tank_cleaning_model.pkl"
 FEATURES = [
-    "turbidity", "tds", "water_level", "days_since_last_cleaning",
-    "turbidity_trend", "tds_trend", "water_level_change",
+    "turbidity",
+    "tds",
+    "water_level",
+    "days_since_last_cleaning",
+    "turbidity_trend",
+    "tds_trend",
+    "water_level_change",
 ]
 
 
-def calculate_trends(db: Session, reading):
-    previous = crud.get_recent_before(db, reading.tank_id, reading.timestamp)
-    if not previous:
-        return 0.0, 0.0, 0.0
-    return (
-        reading.turbidity - float(np.mean([item.turbidity for item in previous])),
-        reading.tds - float(np.mean([item.tds for item in previous])),
-        reading.water_level - float(np.mean([item.water_level for item in previous])),
-    )
+class PredictionService:
+    def __init__(self) -> None:
+        configured_path = Path(os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
+        if not configured_path.is_absolute():
+            configured_path = (BASE_DIR / configured_path).resolve()
+        if not configured_path.exists():
+            raise FileNotFoundError(
+                f"Model not found at {configured_path}. Run: python ml/train_model.py"
+            )
+        self.model = joblib.load(configured_path)
+        self.minimum = int(os.getenv("MIN_PREDICTION_DAYS", "0"))
+        self.maximum = int(os.getenv("MAX_PREDICTION_DAYS", "90"))
+        with (BASE_DIR / "maintenance_config.json").open(encoding="utf-8") as handle:
+            self.categories = json.load(handle)
 
+    def status_for(self, days: int) -> str:
+        for category in self.categories:
+            if days <= category["max_days"]:
+                return category["label"]
+        return self.categories[-1]["label"]
 
-def status_for_days(days: int) -> str:
-    for item in CONFIG["statuses"]:
-        if days >= item["min_days"] and (item["max_days"] is None or days <= item["max_days"]):
-            return item["label"]
-    return "Routine Monitoring"
-
-
-def predict_and_save(db: Session, tank, reading):
-    turbidity_trend, tds_trend, water_change = calculate_trends(db, reading)
-    days_since_cleaning = max((date.today() - tank.last_cleaned_date).days, 0)
-    values = pd.DataFrame([[
-        reading.turbidity, reading.tds, reading.water_level, days_since_cleaning,
-        turbidity_trend, tds_trend, water_change,
-    ]], columns=FEATURES)
-
-    if MODEL_PATH.exists():
-        model = joblib.load(MODEL_PATH)
-        predicted_days = max(0, int(round(float(model.predict(values)[0]))))
-    else:
-        # Deterministic local fallback keeps ingestion functional before model training.
-        condition_pressure = (
-            reading.turbidity * 0.22 + reading.tds * 0.018 + days_since_cleaning * 0.35
-            + max(turbidity_trend, 0) * 0.25 + max(tds_trend, 0) * 0.025
-        )
-        predicted_days = max(0, min(30, int(round(28 - condition_pressure))))
-
-    generated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    return crud.create_prediction(
-        db,
-        tank_id=tank.tank_id,
-        predicted_days=predicted_days,
-        predicted_cleaning_date=generated_at.date() + timedelta(days=predicted_days),
-        maintenance_status=status_for_days(predicted_days),
-        generated_at=generated_at,
-    )
+    def predict(self, values: dict[str, float]) -> dict[str, object]:
+        frame = pd.DataFrame([[values[name] for name in FEATURES]], columns=FEATURES)
+        raw_prediction = float(self.model.predict(frame)[0])
+        days = round(max(self.minimum, min(self.maximum, raw_prediction)))
+        predicted_date = date.today() + timedelta(days=days)
+        return {
+            "predictedDays": days,
+            "predictedCleaningDate": predicted_date,
+            "maintenanceStatus": self.status_for(days),
+        }

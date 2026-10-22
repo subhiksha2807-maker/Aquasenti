@@ -1,39 +1,35 @@
-"""Generate a synthetic dataset for testing the AquaSentinel ML pipeline.
-
-This dataset is synthetic demonstration data and is NOT scientifically validated.
-Replace it with actual historical tank sensor and cleaning records before
-real-world deployment.
-"""
+"""Generate synthetic demonstration data; it is not scientifically validated."""
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
 OUTPUT = Path(__file__).resolve().parent / "tank_training_data.csv"
-ROWS = 1_000
 
 
-def main() -> None:
-    rng = np.random.default_rng(42)
-    values = {
-        "turbidity": rng.uniform(3, 80, ROWS),
-        "tds": rng.uniform(90, 650, ROWS),
-        "water_level": rng.uniform(8, 100, ROWS),
-        "days_since_last_cleaning": rng.integers(0, 91, ROWS),
-        "turbidity_trend": rng.normal(2, 10, ROWS),
-        "tds_trend": rng.normal(5, 35, ROWS),
-        "water_level_change": rng.normal(-2, 16, ROWS),
-    }
-    target = (
-        43.5 - 0.45 * values["turbidity"] - 0.025 * values["tds"]
-        - 0.45 * values["days_since_last_cleaning"] - 0.08 * values["turbidity_trend"]
-        - 0.03 * values["tds_trend"] + 0.02 * values["water_level"]
-        + 0.04 * values["water_level_change"] + rng.normal(0, 2.2, ROWS)
+def main():
+    rng = np.random.default_rng(2026)
+    rows = 1200
+    turbidity = rng.uniform(5, 90, rows)
+    tds = rng.uniform(90, 650, rows)
+    water_level = rng.uniform(10, 100, rows)
+    days_since = rng.uniform(0, 80, rows)
+    turbidity_trend = rng.normal(2, 8, rows)
+    tds_trend = rng.normal(5, 25, rows)
+    water_change = rng.normal(-2, 12, rows)
+    pressure = (
+        turbidity * 0.19 + tds * 0.014 + days_since * 0.2
+        + np.maximum(turbidity_trend, 0) * 0.18 + np.maximum(tds_trend, 0) * 0.012
     )
-    values["days_until_cleaning"] = np.clip(target, 0, 60)
-    frame = pd.DataFrame(values).round(2)
-    frame.to_csv(OUTPUT, index=False)
-    print(f"Wrote {len(frame)} synthetic demonstration rows to {OUTPUT}")
+    target = np.clip(35 - pressure + rng.normal(0, 2.2, rows), 0, 45)
+    data = pd.DataFrame({
+        "turbidity": turbidity.round(2), "tds": tds.round(2), "water_level": water_level.round(2),
+        "days_since_last_cleaning": days_since.round(2), "turbidity_trend": turbidity_trend.round(2),
+        "tds_trend": tds_trend.round(2), "water_level_change": water_change.round(2),
+        "days_until_cleaning": target.round(2),
+    })
+    data.to_csv(OUTPUT, index=False)
+    print(f"Generated {rows} synthetic demo rows at {OUTPUT}")
+    print("WARNING: This dataset is synthetic and not scientifically validated for real maintenance decisions.")
 
 
 if __name__ == "__main__":

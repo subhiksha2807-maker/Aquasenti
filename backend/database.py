@@ -1,35 +1,30 @@
-"""Database engine and request-scoped SQLAlchemy sessions."""
-from __future__ import annotations
-
-import os
 from pathlib import Path
+import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
-DEFAULT_DATABASE = (BASE_DIR / "data" / "aquasentinel.db").as_posix()
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DATABASE}")
+
+DEFAULT_DB = f"sqlite:///{(BASE_DIR / 'data' / 'aquasentinel.db').as_posix()}"
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DB)
 
 if DATABASE_URL.startswith("sqlite"):
-    database_path = DATABASE_URL.removeprefix("sqlite:///")
-    if database_path and database_path != ":memory:":
-        Path(database_path).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
+    (BASE_DIR / "data").mkdir(parents=True, exist_ok=True)
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
-
-
-class Base(DeclarativeBase):
-    pass
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 
 def get_db():
-    session = SessionLocal()
+    db = SessionLocal()
     try:
-        yield session
+        yield db
     finally:
-        session.close()
+        db.close()

@@ -10,15 +10,15 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@tailwindcss/vite": "latest",
     "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
-    "qrcode.react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
     "recharts": "latest",
-    "tailwindcss": "latest"
+    "lucide-react": "latest",
+    "qrcode.react": "latest"
   },
   "devDependencies": {
     "@eslint/js": "latest",
@@ -26,6 +26,8 @@
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
-    "vite": "latest"
+    "tailwindcss": "3.4.17",
+    "postcss": "latest",
+    "autoprefixer": "latest"
   }
 }

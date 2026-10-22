@@ -6,8 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class SensorReadingCreate(BaseModel):
     tank_id: str = Field(alias="tankId", min_length=3, max_length=50)
     turbidity: float = Field(ge=0, le=4000)
-    tds: float = Field(ge=0, le=10000)
-    water_level: float = Field(alias="waterLevel", ge=0, le=100)
+    ph: float = Field(ge=0, le=14)
+    ultrasonic_distance: float = Field(alias="ultrasonicDistance", ge=0, le=1000)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -31,8 +31,8 @@ class TankResponse(BaseModel):
 
 class ReadingResponse(BaseModel):
     turbidity: float
-    tds: float
-    water_level: float = Field(serialization_alias="waterLevel")
+    ph: float
+    ultrasonic_distance: float = Field(serialization_alias="ultrasonicDistance")
     timestamp: datetime
 
     model_config = ConfigDict(from_attributes=True, serialize_by_alias=True)

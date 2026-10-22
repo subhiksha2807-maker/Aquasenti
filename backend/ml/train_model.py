@@ -10,8 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "tank_training_data.csv"
 MODEL_PATH = BASE_DIR / "tank_cleaning_model.pkl"
 FEATURES = [
-    "turbidity", "tds", "water_level", "days_since_last_cleaning",
-    "turbidity_trend", "tds_trend", "water_level_change",
+    "turbidity", "ph", "ultrasonic_distance", "days_since_last_cleaning",
+    "turbidity_trend", "ph_deviation_trend", "ultrasonic_distance_change",
 ]
 
 

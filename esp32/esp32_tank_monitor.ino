@@ -13,8 +13,9 @@ const char* API_KEY = "CHANGE_ME";
 const char* TANK_ID = "TN-TANK-001";
 
 const int TURBIDITY_PIN = 34;
-const int TDS_PIN = 35;
-const int WATER_LEVEL_PIN = 32;
+const int PH_PIN = 35;
+const int ULTRASONIC_TRIG_PIN = 32;
+const int ULTRASONIC_ECHO_PIN = 33;
 const unsigned long SEND_INTERVAL_MS = 60000;
 unsigned long lastSent = 0;
 
@@ -28,17 +29,21 @@ float calibratedTurbidityNtu(int raw) {
   return max(0.0f, (3.0f - voltage) * 35.0f);
 }
 
-float calibratedTdsPpm(int raw) {
+float calibratedPh(int raw) {
   float voltage = voltageFromAdc(raw);
-  // DEMO approximation only; temperature compensation and calibration are required.
-  return max(0.0f, voltage * 170.0f);
+  // DEMO approximation only. Calibrate with known pH buffer solutions.
+  return constrain(7.0f + ((2.5f - voltage) * 3.5f), 0.0f, 14.0f);
 }
 
-float calibratedWaterLevelPercent(int raw) {
-  // Set these values from actual empty/full tank measurements.
-  const int emptyAdc = 400;
-  const int fullAdc = 3300;
-  return constrain((raw - emptyAdc) * 100.0f / (fullAdc - emptyAdc), 0.0f, 100.0f);
+float ultrasonicDistanceCm() {
+  digitalWrite(ULTRASONIC_TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(ULTRASONIC_TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASONIC_TRIG_PIN, LOW);
+  unsigned long duration = pulseIn(ULTRASONIC_ECHO_PIN, HIGH, 30000);
+  if (duration == 0) return 1000.0f;
+  return duration * 0.0343f / 2.0f;
 }
 
 void connectWifi() {
@@ -55,10 +60,10 @@ void sendReading() {
   if (WiFi.status() != WL_CONNECTED) connectWifi();
 
   float turbidity = calibratedTurbidityNtu(analogRead(TURBIDITY_PIN));
-  float tds = calibratedTdsPpm(analogRead(TDS_PIN));
-  float waterLevel = calibratedWaterLevelPercent(analogRead(WATER_LEVEL_PIN));
+  float ph = calibratedPh(analogRead(PH_PIN));
+  float ultrasonicDistance = ultrasonicDistanceCm();
   String json = "{\"tankId\":\"" + String(TANK_ID) + "\",\"turbidity\":" + String(turbidity, 1)
-    + ",\"tds\":" + String(tds, 1) + ",\"waterLevel\":" + String(waterLevel, 1) + "}";
+    + ",\"ph\":" + String(ph, 2) + ",\"ultrasonicDistance\":" + String(ultrasonicDistance, 1) + "}";
 
   WiFiClient client;
   HTTPClient http;
@@ -74,6 +79,8 @@ void sendReading() {
 void setup() {
   Serial.begin(115200);
   analogReadResolution(12);
+  pinMode(ULTRASONIC_TRIG_PIN, OUTPUT);
+  pinMode(ULTRASONIC_ECHO_PIN, INPUT);
   connectWifi();
   sendReading();
   lastSent = millis();

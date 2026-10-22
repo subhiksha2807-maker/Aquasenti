@@ -13,8 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "ml" / "tank_cleaning_model.pkl"
 CONFIG = json.loads((BASE_DIR / "maintenance_config.json").read_text(encoding="utf-8"))
 FEATURES = [
-    "turbidity", "tds", "water_level", "days_since_last_cleaning",
-    "turbidity_trend", "tds_trend", "water_level_change",
+    "turbidity", "ph", "ultrasonic_distance", "days_since_last_cleaning",
+    "turbidity_trend", "ph_deviation_trend", "ultrasonic_distance_change",
 ]
 
 
@@ -24,8 +24,8 @@ def calculate_trends(db: Session, reading):
         return 0.0, 0.0, 0.0
     return (
         reading.turbidity - float(np.mean([item.turbidity for item in previous])),
-        reading.tds - float(np.mean([item.tds for item in previous])),
-        reading.water_level - float(np.mean([item.water_level for item in previous])),
+        abs(reading.ph - 7.0) - float(np.mean([abs(item.ph - 7.0) for item in previous])),
+        reading.ultrasonic_distance - float(np.mean([item.ultrasonic_distance for item in previous])),
     )
 
 
@@ -37,11 +37,11 @@ def status_for_days(days: int) -> str:
 
 
 def predict_and_save(db: Session, tank, reading):
-    turbidity_trend, tds_trend, water_change = calculate_trends(db, reading)
+    turbidity_trend, ph_deviation_trend, distance_change = calculate_trends(db, reading)
     days_since_cleaning = max((date.today() - tank.last_cleaned_date).days, 0)
     values = pd.DataFrame([[
-        reading.turbidity, reading.tds, reading.water_level, days_since_cleaning,
-        turbidity_trend, tds_trend, water_change,
+        reading.turbidity, reading.ph, reading.ultrasonic_distance, days_since_cleaning,
+        turbidity_trend, ph_deviation_trend, distance_change,
     ]], columns=FEATURES)
 
     if MODEL_PATH.exists():
@@ -50,8 +50,9 @@ def predict_and_save(db: Session, tank, reading):
     else:
         # Deterministic local fallback keeps ingestion functional before model training.
         condition_pressure = (
-            reading.turbidity * 0.22 + reading.tds * 0.018 + days_since_cleaning * 0.35
-            + max(turbidity_trend, 0) * 0.25 + max(tds_trend, 0) * 0.025
+            reading.turbidity * 0.22 + abs(reading.ph - 7.0) * 3.0
+            + days_since_cleaning * 0.35 + max(turbidity_trend, 0) * 0.25
+            + max(ph_deviation_trend, 0) * 2.0
         )
         predicted_days = max(0, min(30, int(round(28 - condition_pressure))))
 

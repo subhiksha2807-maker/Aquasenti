@@ -35,9 +35,18 @@ def get_recent_before(db: Session, tank_id: str, before: datetime, limit: int = 
     )
 
 
-def create_reading(db: Session, tank_id: str, turbidity: float, tds: float, water_level: float):
+def create_reading(
+    db: Session, tank_id: str, turbidity: float, ph: float, ultrasonic_distance: float
+):
+    # Legacy fields remain populated for compatibility with databases created by v1.
+    water_level = max(0.0, min(100.0, 100.0 - (ultrasonic_distance / 2.0)))
     reading = models.SensorReading(
-        tank_id=tank_id.upper(), turbidity=turbidity, tds=tds, water_level=water_level
+        tank_id=tank_id.upper(),
+        turbidity=turbidity,
+        ph=ph,
+        ultrasonic_distance=ultrasonic_distance,
+        tds=0.0,
+        water_level=water_level,
     )
     db.add(reading)
     db.commit()

@@ -2,8 +2,8 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 
 const charts = [
   ["Turbidity vs Time", "turbidity", "NTU", "#08a9bd"],
-  ["TDS vs Time", "tds", "ppm", "#2563eb"],
-  ["Water Level vs Time", "waterLevel", "%", "#10b981"],
+  ["pH vs Time", "ph", "pH", "#7c3aed"],
+  ["Ultrasonic Distance vs Time", "ultrasonicDistance", "cm", "#10b981"],
 ];
 
 function Chart({ title, field, unit, color, data }) {

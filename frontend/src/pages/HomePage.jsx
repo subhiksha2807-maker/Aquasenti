@@ -53,7 +53,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-2xl text-center"><p className="eyebrow">One connected system</p><h2 className="section-title text-4xl">From sensor signal to maintenance action.</h2><p className="mt-4 leading-7 text-slate-500">AquaSentinel turns continuous field data into an accessible operational view for teams responsible for public tanks.</p></div>
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {[
-            [Radio, "Monitor continuously", "Capture turbidity, total dissolved solids, and water-level readings from each connected unit."],
+            [Radio, "Monitor continuously", "Capture turbidity, pH, and ultrasonic distance readings from each connected unit."],
             [BarChart3, "See patterns early", "Review historical signals across 24-hour, 7-day, and 30-day windows."],
             [BrainCircuit, "Prioritize maintenance", "Use a demonstration ML model to help rank inspection and cleaning needs."],
           ].map(([Icon, title, text], i) => <article key={title} className="card p-8"><span className="mb-7 grid h-12 w-12 place-items-center rounded-2xl bg-mist text-cyan-700"><Icon /></span><span className="text-xs font-bold text-cyan-700">0{i + 1}</span><h3 className="mt-2 text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-500">{text}</p></article>)}

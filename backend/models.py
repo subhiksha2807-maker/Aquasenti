@@ -33,6 +33,9 @@ class SensorReading(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tank_id: Mapped[str] = mapped_column(ForeignKey("tanks.tank_id"), index=True)
     turbidity: Mapped[float] = mapped_column(Float)
+    ph: Mapped[float] = mapped_column(Float, default=7.0)
+    ultrasonic_distance: Mapped[float] = mapped_column(Float, default=0.0)
+    # Retained internally so older SQLite databases can be upgraded in place.
     tds: Mapped[float] = mapped_column(Float)
     water_level: Mapped[float] = mapped_column(Float)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)

@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 import crud, models, schemas
-from database import Base, engine, get_db
+from database import Base, engine, get_db, migrate_sensor_readings
 from prediction_service import CONFIG, predict_and_save
 from websocket_manager import manager
 
@@ -32,6 +32,7 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    migrate_sensor_readings()
 
 
 def ensure_tank(db: Session, tank_id: str):
@@ -126,7 +127,7 @@ async def ingest_reading(
     tank = ensure_tank(db, payload.tank_id)
     try:
         reading = crud.create_reading(
-            db, payload.tank_id, payload.turbidity, payload.tds, payload.water_level
+            db, payload.tank_id, payload.turbidity, payload.ph, payload.ultrasonic_distance
         )
         prediction = predict_and_save(db, tank, reading)
     except SQLAlchemyError:

@@ -7,7 +7,7 @@ AI-powered public water-tank monitoring and cleaning prediction, built for a com
 ## Architecture
 
 ```text
-Turbidity / TDS / Water-level sensors
+Turbidity / pH / Ultrasonic sensors
                 ↓
               ESP32
                 ↓ Wi-Fi / phone hotspot
@@ -110,7 +110,7 @@ Open http://localhost:5173, search for `TN-TANK-001`, and inspect the live readi
 
 1. Keep both servers running.
 2. Open http://localhost:5173/admin/demo.
-3. Select `TN-TANK-001` and enter turbidity `50`, TDS `330`, and water level `62`.
+3. Select `TN-TANK-001` and enter turbidity `50`, pH `7.1`, and ultrasonic distance `76` cm.
 4. Select **Send Demo Reading**.
 5. Open the tank dashboard. If it is already open in another tab, the cards and prediction update automatically through WebSocket.
 
@@ -127,7 +127,7 @@ Local simulator requests use a dedicated `X-Demo-Mode: local-simulator` header a
 
 The ESP32 sends `X-API-Key`; FastAPI validates it, stores every reading, calculates historical trends, runs the model, saves the prediction, and broadcasts the update. Real readings use the same path as simulated ones and therefore require no dashboard changes.
 
-Raw ADC values are not NTU, ppm, or percentage values. Calibrate each sensor against appropriate references and replace the demonstration conversion coefficients before real use.
+Raw electrical and timing signals are not calibrated NTU, pH, or distance measurements. Calibrate each sensor against appropriate references and replace the demonstration conversion coefficients before real use.
 
 ## API examples
 
@@ -143,7 +143,7 @@ Hardware-style ingestion (the key must match `.env`):
 
 ```powershell
 $headers = @{ 'X-API-Key' = 'CHANGE_ME' }
-$body = @{ tankId='TN-TANK-001'; turbidity=50; tds=330; waterLevel=62 } | ConvertTo-Json
+$body = @{ tankId='TN-TANK-001'; turbidity=50; ph=7.1; ultrasonicDistance=76 } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/readings -Headers $headers -ContentType 'application/json' -Body $body
 ```
 

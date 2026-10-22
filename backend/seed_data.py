@@ -3,7 +3,7 @@ import math
 import random
 from datetime import date, datetime, timedelta, timezone
 
-from database import Base, SessionLocal, engine
+from database import Base, SessionLocal, engine, migrate_sensor_readings
 import models
 from prediction_service import predict_and_save
 
@@ -16,6 +16,7 @@ TANKS = [
 
 def main():
     Base.metadata.create_all(bind=engine)
+    migrate_sensor_readings()
     db = SessionLocal()
     random.seed(42)
     try:
@@ -37,8 +38,10 @@ def main():
                     reading = models.SensorReading(
                         tank_id=tank_id,
                         turbidity=round(18 + index * 3 + progress * 20 + random.uniform(-3, 3), 1),
-                        tds=round(210 + index * 18 + progress * 70 + random.uniform(-12, 12), 1),
-                        water_level=round(max(15, min(100, 72 + 18 * math.sin(hour / 30) + random.uniform(-4, 4))), 1),
+                        ph=round(max(5.5, min(8.5, 7.2 - progress * 0.35 + random.uniform(-0.15, 0.15))), 2),
+                        ultrasonic_distance=round(max(8, min(190, 58 + 35 * math.sin(hour / 30) + random.uniform(-4, 4))), 1),
+                        tds=0.0,
+                        water_level=0.0,
                         timestamp=start + timedelta(hours=hour),
                     )
                     db.add(reading)
